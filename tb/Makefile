@@ -34,6 +34,11 @@ ifeq ($(SIM),verilator)
   COMPILE_ARGS += -Wno-EOFNEWLINE #to avoid lint issue %Warning-EOFNEWLINE: Missing newline at end of file
   COMPILE_ARGS += -Wno-WIDTHTRUNC #to avoid lint issue for size mismatches
   COMPILE_ARGS += -I$(DESIGN_DIR) # compiler flag that stands for Include. It tells the compiler, "Hey, when you are looking for header files (like .h in C/C++) or package/include files (like .vh or .svh in Verilog), look inside the directory I'm about to specify."
+
+  # Add this to enable wave dumping when you type: make WAVES=1
+  ifeq ($(WAVES),1)
+    COMPILE_ARGS += --trace --trace-structs
+  endif
 endif 
 
 
@@ -50,9 +55,10 @@ ifeq ($(SIM),vcs)
 endif
 
 
-
 ifeq ($(TOPLEVEL_LANG),verilog)
-    VERILOG_SOURCES = $(DESIGN_DIR)/axi_lite_slave_v1_0_S00_AXI.v
+    #VERILOG_SOURCES = $(DESIGN_DIR)/axi_lite_slave_v1_0_S00_AXI.v
+    # Automatically finds all .v and .sv files in the RTL folder
+    VERILOG_SOURCES = $(wildcard $(DESIGN_DIR)/*.v) $(wildcard $(DESIGN_DIR)/*.sv)
 else
     $(error A valid value (verilog or vhdl) was not provided for TOPLEVEL_LANG=$(TOPLEVEL_LANG))
 endif
@@ -66,5 +72,5 @@ waves:
 	gtkwave dump.vcd &
 
 clean_all: clean
-	rm -rf __pycache__ results.xml dump.vcd sim_build
+	rm -rf __pycache__ results.xml *.vcd *.fst sim_build obj_dir
 
