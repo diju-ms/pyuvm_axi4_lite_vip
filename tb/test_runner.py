@@ -15,56 +15,102 @@ logging.basicConfig(
 )
 # Create a logger
 logger = logging.getLogger()
+
+
+toplevel = "axi_lite_slave_v1_0_S00_AXI"
+module = "main"
+
+repo_root = Path(__file__).resolve().parent.parent
+tb_path = Path(__file__).resolve().parent
+
+# Get desing path
+rtl_dir = repo_root / "rtl"
+
+sources = [rtl_dir / "axi_lite_slave_v1_0_S00_AXI.v"]  
+print(f"DEBUG: Checking RTL Path -> {(rtl_dir / 'axi_lite_slave_v1_0_S00_AXI.v').resolve()}")
+
+
+# 1. Initialize empty lists for arguments
+build_args = []
+test_args = []
+
+
+# 1. Update the local script path
+if str(repo_root) not in sys.path:
+    sys.path.append(str(repo_root))
+
+# 2. FIX: Force the OS environment to pass the path down to the simulator
+# This ensures Verilator/Cocotb can see the 'vip' folder during execution
+os.environ["PYTHONPATH"] = str(repo_root) + os.pathsep + os.environ.get("PYTHONPATH", "")
+
+
   
 def test_my_design_runner():  
     sim = os.getenv("SIM", "verilator")  
-    waves=1  
+    waves=1 
 
-    # Get project path
-    proj_path = Path(__file__).resolve().parent.parent
 
-    rtl_dir = proj_path / "rtl"
+    # 2. Add flags ONLY if we are using Verilator
+    if sim == "verilator":
+        build_args.extend([
+            "--timing",
+            "--assert",
+            "-Wall",
+            "-Wno-EOFNEWLINE",
+            "-Wno-WIDTHTRUNC",
+            f"-I{rtl_dir}"
+        ])
+        
+        # Guarded wave tracing for Verilator
+        if os.environ.get("WAVES") == "1":
+            build_args.extend(["--trace-fst", "--trace-structs"])
+            test_args.append("--trace")
+
+    # 3. Add flags for other simulators if you use them later
+    elif sim == "icarus":
+        if os.environ.get("WAVES") == "1":
+            # Icarus handles waveforms via runtime target VVP flags
+            test_args.append("-fst")  
+
+
 ###    dut_file = rtl_dir / "axi_lite_slave_v1_0_S00_AXI.v"
 
     # Create sim_build directory if it doesn't exist
-    sim_build_dir = proj_path / "tb/sim_build"
+    sim_build_dir = repo_root / "tb/sim_build"
     sim_build_dir.mkdir(exist_ok=True)
 
     # Source files
  #   sources = [
  #       proj_path / "hdl" / "verilog" / "tinyalu.sv"
  #   ]
-    sources = [rtl_dir / "axi_lite_slave_v1_0_S00_AXI.v"]  
-    print(f"DEBUG: Checking RTL Path -> {(rtl_dir / 'axi_lite_slave_v1_0_S00_AXI.v').resolve()}")
   
     runner = get_runner(sim) 
 
-    # Set environment variables to control waveform dumping
-    os.environ["COCOTB_DUMP_WAVE_FORMAT"] = "vcd"  # Use vcd format
-    # Set VCD_NAME to specify the output VCD file name  
-    #env = os.environ.copy()  
-    os.environ["VCD_NAME"] = "my_wave.vcd"  
+#    # Set environment variables to control waveform dumping
+#    os.environ["COCOTB_DUMP_WAVE_FORMAT"] = "vcd"  # Use vcd format
+#    # Set VCD_NAME to specify the output VCD file name  
+#    #env = os.environ.copy()  
+#    os.environ["VCD_NAME"] = "my_wave.vcd"  
 
-    runner.build(  
-        sources=sources,  
-        hdl_toplevel="axi_lite_slave_v1_0_S00_AXI",  
-        waves=True,  
-        build_args =["--trace","-Wno-WIDTHTRUNC"],  # Enable VCD tracing in Verilator  
-        #build_args=["-Wno-WIDTHTRUNC"],  # <-- Added waiver flag 
-        #build_args =["--trace --trace-structs"],  # Enable VCD tracing in Verilator   
-        #build_args =["--trace --trace-fst --trace-structs"],  # Enable FST tracing in Verilator   
-    )  
-  
-  
-    runner.test(  
-        hdl_toplevel="sync_axi_lite_slave_v1_0_S00_AXIfifo",   
-        test_module="main",  
-        waves=True,
-        seed = None,
-#        testcase = "Allsame_Test",
+
+    runner.build(
+        sources=sources,
+        hdl_toplevel=toplevel,
+        build_args=build_args,
+        clean=True,
+#        waves=True,  
+#        build_args =["--trace","-Wno-WIDTHTRUNC"],  # Enable VCD tracing in Verilator  
+    )
+    
+    runner.test(
+        hdl_toplevel=toplevel, 
+        test_module=module,
+        test_args=test_args,
 #        Log_file = "srun.log",
+#        seed = None,
+#        testcase = "Allsame_Test",
 #        #plusargs=["+UVM_TESTNAME=AluTest"], # Pass the specific pyuvm test name
-        )  
+    ) 
   
   
 if __name__ == "__main__":  
