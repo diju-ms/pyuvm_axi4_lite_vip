@@ -35,7 +35,11 @@ ifeq ($(SIM),verilator)
 
   # Add this to enable wave dumping when you type: make WAVES=1
   ifeq ($(WAVES),1)
-    EXTRA_ARGS += --trace --trace-structs
+    PLUSARGS += --trace
+#VCD option
+    #EXTRA_ARGS += --trace --trace-structs
+#FST option
+    EXTRA_ARGS += --trace-fst --trace-structs
   endif
 endif 
 
