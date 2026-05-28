@@ -13,20 +13,18 @@ SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
 
 #top design unit name
-COCOTB_TOPLEVEL     := axi_lite_slave_v1_0_S00_AXI
+TOPLEVEL := axi_lite_slave_v1_0_S00_AXI
 
 #top python tb file name
-COCOTB_TEST_MODULES := main
+MODULE := main
 
 # design/ is one level up from tb/
 DESIGN_DIR = $(PWD)/../rtl
 
-# top leel project path
+# top level project path
 export PYTHONPATH := $(PWD)/..:$(PYTHONPATH)
 
 
-# 1. MOVE LINT FLAGS HERE (At the top, before rules)
-# EXTRA_ARGS += -Wno-WIDTHTRUNC
 ifeq ($(SIM),verilator)
   COMPILE_ARGS += --timing        # required for cocotb with Verilator
   COMPILE_ARGS += --assert        # enable SVA (partial support)
@@ -37,7 +35,7 @@ ifeq ($(SIM),verilator)
 
   # Add this to enable wave dumping when you type: make WAVES=1
   ifeq ($(WAVES),1)
-    COMPILE_ARGS += --trace --trace-structs
+    EXTRA_ARGS += --trace --trace-structs
   endif
 endif 
 
