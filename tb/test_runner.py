@@ -33,6 +33,7 @@ print(f"DEBUG: Checking RTL Path -> {(rtl_dir / 'axi_lite_slave_v1_0_S00_AXI.v')
 # 1. Initialize empty lists for arguments
 build_args = []
 test_args = []
+plus_args = []  # Added for plusarg control parameters
 
 
 # 1. Update the local script path
@@ -72,6 +73,15 @@ def test_my_design_runner():
             # Icarus handles waveforms via runtime target VVP flags
             test_args.append("-fst")  
 
+    # Safe Wave Tracing configuration block
+    if os.environ.get("WAVES") == "1":
+        # 1. Instruct compiler to bake the trace infrastructure
+        build_args.extend(["--trace-fst", "--trace-structs"])
+        # 2. Tell the test interface to initialize the trace runtime engine
+        test_args.append("--trace")
+        # 3. FIX: Force the file path to dump directly in your current folder
+        plus_args.append("+dumpfile_path=dump.fst")
+
 
 ###    dut_file = rtl_dir / "axi_lite_slave_v1_0_S00_AXI.v"
 
@@ -106,7 +116,8 @@ def test_my_design_runner():
         hdl_toplevel=toplevel, 
         test_module=module,
         test_args=test_args,
-#        Log_file = "srun.log",
+        log_file = "srun.log",
+        plusargs=plus_args,
 #        seed = None,
 #        testcase = "Allsame_Test",
 #        #plusargs=["+UVM_TESTNAME=AluTest"], # Pass the specific pyuvm test name
